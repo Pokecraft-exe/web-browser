@@ -3,23 +3,22 @@ from Files.audio import *
 import os
 from PIL import Image
 from tkinter import ttk
-# import imageio
+# from imageio import imread
+import imageio
 from HTML import *
 requests.urllib3.disable_warnings()
 
 print("    Creating TKinter Window")
-root = Ttk()
+root = tk.Tk()
 root.geometry("500x400")
 
 URL = tk.StringVar()
 URL.set("Startpage.html")
 
 print("    Getting site '" + URL.get() + "'")
-print(get_site(URL.get()))
 if ok(URL.get()):
     s=get_site(URL.get())
 else:
-    s=get_site(URL.get())
     print("an error occured verify connexion.")
     exit()
 
@@ -30,7 +29,7 @@ URL_frame = tk.Frame(root)
 URL_frame.pack(side=tk.TOP, fill="x", expand="no")
 URL_input = tk.Entry(URL_frame, textvariable=URL)
 URL_input.pack(side=tk.LEFT, fill="x", expand="yes")
-send = tk.Button(URL_frame, text="Aller", command= lambda: parse(get_site(URL.get()), URL.get()))
+send = tk.Button(URL_frame, text="Aller", command= lambda: parse(get_site(URL.get())))
 send.pack(side=tk.RIGHT)
 
 print("    Changing Icon to Site Icon")
@@ -56,11 +55,21 @@ xscrollbar.pack(side=tk.BOTTOM, fill="x")
 my_canvas.configure(yscrollcommand=my_scrollbar.set, xscrollcommand=xscrollbar.set)
 my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion = my_canvas.bbox("all")))
 
+vid = Video()
+vidb = 0
+
 second_frame = tk.Frame(my_canvas)
 
 my_canvas.create_window((0,0), window = second_frame, anchor="nw")
 
 print("    Parsing HTML")
+
+def pause():
+    vid.pause()
+    if vidb['text'] == '| |':
+        vidb['text'] = '►'
+    else:
+        vidb['text'] = '| |'
     
 def show_object(object):
     print(object.type)
@@ -76,16 +85,28 @@ def show_object(object):
        imgb.image = photo
        imgb.pack()
     if object.type == "Video":
+        global vid
+        global vidb
         print(imageio.get_reader(object.image).get_meta_data()["duration"])
-        Video(second_frame, object.image, root).play()
+        vidframespace = tk.Frame(second_frame)
+        vidbframespace = tk.Frame(vidframespace)
+        vid = Video()
+        vidframe = tk.Label(vidframespace)
+        vid.openfile(object.image, vidframe, vidframespace)
+        vidb = tk.Button(vidbframespace, text = "►", command = pause)
+        vidb.pack(side = 'left')
+        vidframespace.pack()
+        vidframe.pack(side="top")
+        vidbframespace.pack(side = "bottom")
+        vid.play()
     if object.type == "aButton":
         if object.image != '':
             photo = tk.PhotoImage(file = object.image)
-            ab = tk.Button(second_frame, text=object.text, image = photo, borderwidth = object.borderwidth, fg = object.fg, font=(object.font_type, object.font_size), command= lambda: parse(get_site(object.href), object.href))
+            ab = tk.Button(second_frame, text=object.text, image = photo, borderwidth = object.borderwidth, fg = object.fg, font=(object.font_type, object.font_size))
             ab.image = photo
             ab.pack()
         else:
-            tk.Button(second_frame, text=object.text, borderwidth = object.borderwidth, fg = object.fg, font=(object.font_type, object.font_size), command= lambda: parse(get_site(object.href), object.href)).pack()
+            tk.Button(second_frame, text=object.text, borderwidth = object.borderwidth, fg = object.fg, font=(object.font_type, object.font_size)).pack()
     return 0
 
 def unrange(i):
@@ -95,18 +116,12 @@ def unrange(i):
         r.append(i)
     return r
 
-def parse(s, url):
-    global URL
-    try:
-        request.get('https://google.fr')
-    except:
-        s=get_site('404.html')
-    URL.set(url)
+def parse(s):
     for widget in second_frame.winfo_children():
         widget.destroy()
     root.iconbitmap("lico.ico")
     c = list(s.html.body.children)
-    #c = list(filter(('\n').__ne__, c)) # remove all \n from list
+    c = list(filter(('\n').__ne__, c)) # remove all \n from list
     print(c)
     default_object = GraphicalObject()
     current_object = GraphicalObject()
@@ -132,71 +147,56 @@ def parse(s, url):
         
             print("making ", len(d), "iterations, actually are the", i)
             print(str(d[i])[0:6])
-            if "<img" in str(d[i]):
+            if str(d[i])[0:4] == "<img":
                 print("New image: " + str(get_src(d[i])))
-                if not "//" in str(get_src(d[i])):
-                    URL_I = str(get_src(d[i]))
-                    for j in unrange(len(URL_I)):
-                        if URL_I[j] == '.':
-                            break
-                    ext = URL_I[j:]
-                    with open('TempFiles/'+str(i)+ext, 'wb') as f:
-                        f.write(requests.get(str(get_src(d[i]))).content)
-                    im = Image.open(r'TempFiles/'+str(i)+ext)
-                    try:
-                        im.thumbnail((get_width(d[i]), get_height(d[i])), Image.Resampling.LANCZOS)
-                    except:
-                        print("can't perform widget resizing")
-                    im.save(r'TempFiles/'+str(i)+'.png', 'png')
-                    current_object = GraphicalObject("Image", href=current_object.href, image = str('TempFiles/'+ str(i) + '.png'), text = "image")
-                else:
-                    im = Image.open(str(get_src(d[i])[2:]))
-                    try:
-                        im.thumbnail((get_width(d[i]), get_height(d[i])), Image.Resampling.LANCZOS)
-                    except:
-                        print("can't perform widget resizing")
-                    im.save(str(get_src(d[i])[2:]), 'png')
-                    current_object = GraphicalObject("Image", href=current_object.href, image = str(get_src(d[i])[2:]), text = "image")
-            elif str(d[i])[0:6] == "<video":
-                print("New video: " + str(get_src(d[i])))
-                URL_V = str(get_src(d[i]))
-                for j in unrange(len(URL_V)):
-                    if URL_V[j] == '.':
+                URL = str(get_src(d[i]))
+                for j in unrange(len(URL)):
+                    if URL[j] == '.':
                         break
-                ext = URL_V[j:]
+                ext = URL[j:]
                 with open('TempFiles/'+str(i)+ext, 'wb') as f:
                     f.write(requests.get(str(get_src(d[i]))).content)
-                current_object = GraphicalObject("Video", href=current_object.href, image = str('TempFiles/'+ str(i) + ext), text = "video")
-            elif str(d[i])[0:6] == "<audio":
-                print("New audio: " + str(get_src(d[i])))
-                current_object = GraphicalObject()
+                im = Image.open(r'TempFiles/'+str(i)+ext)
+                im.thumbnail((get_width(d[i]), get_height(d[i])), Image.Resampling.LANCZOS)
+                im.save(r'TempFiles/'+str(i)+'.png', 'png')
+                current_object = GraphicalObject("Image", image = str('TempFiles/'+ str(i) + '.png'), text = "image")
+            elif str(d[i])[0:6] == "<video":
+                print("New video: " + str(get_src(d[i])))
+                URL = str(get_src(d[i]))
+                for j in unrange(len(URL)):
+                    if URL[j] == '.':
+                        break
+                ext = URL[j:]
+                with open('TempFiles/'+str(i)+ext, 'wb') as f:
+                    f.write(requests.get(str(get_src(d[i]))).content)
+                current_object = GraphicalObject("Video", image = str('TempFiles/'+ str(i) + ext), text = "video")
             elif str(d[i])[0:2] == "<a":
                 print("New Href data: " + str(d[i]))
-                current_object = GraphicalObject("aButton", href=get_href(d[i]), text=current_object.text, fg="blue", borderwidth = 0, font_size=current_object.font_size)
+                current_object = GraphicalObject("aButton", text=current_object.text, fg="blue", borderwidth = 0, font_size=current_object.font_size)
 
             elif str(d[i])[0:3] == "<H1" or str(d[i])[0:3] == "<h1":
                 print("New Head data 1: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, text=current_object.text, font_size=25, fg=current_object.fg, borderwidth = current_object.borderwidth)
+                current_object = GraphicalObject(current_object.type, text=current_object.text, font_size=25, fg=current_object.fg, borderwidth = current_object.borderwidth)
 
             elif str(d[i])[0:3] == "<H2" or str(d[i])[0:3] == "<h2":
                 print("New Head data 2: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, text=current_object.text, font_size=18, fg=current_object.fg, borderwidth = current_object.borderwidth)
+                current_object = GraphicalObject(current_object.type, text=current_object.text, font_size=18, fg=current_object.fg, borderwidth = current_object.borderwidth)
 
             elif str(d[i])[0:3] == "<H3" or str(d[i])[0:3] == "<h3":
                 print("New Head data 3: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, text=current_object.text, font_size=14, fg=current_object.fg, borderwidth = current_object.borderwidth)
+                current_object = GraphicalObject(current_object.type, text=current_object.text, font_size=14, fg=current_object.fg, borderwidth = current_object.borderwidth)
 
             elif str(d[i])[0:3] == "<H4" or str(d[i])[0:3] == "<h4":
                 print("New Head data 4: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, text=current_object.text, font_size=12, fg=current_object.fg, borderwidth = current_object.borderwidth)
+                current_object = GraphicalObject(current_object.type, text=current_object.text, font_size=12, fg=current_object.fg, borderwidth = current_object.borderwidth)
 
             elif str(d[i])[0:3] == "<H5" or str(d[i])[0:3] == "<h5":
                 print("New Head data 5: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, text=current_object.text, font_size=10, fg=current_object.fg, borderwidth = current_object.borderwidth)
+                current_object = GraphicalObject(current_object.type, text=current_object.text, font_size=10, fg=current_object.fg, borderwidth = current_object.borderwidth)
 
             elif str(d[i])[0:3] == "<H6" or str(d[i])[0:3] == "<h6":
                 print("New Head data 6: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, text=current_object.text, font_size=7, fg=current_object.fg, borderwidth = current_object.borderwidth)
+                current_object = GraphicalObject(current_object.type, text=current_object.text, font_size=7, fg=current_object.fg, borderwidth = current_object.borderwidth)
 
             elif str(d[i])[0:6] == "<input":
                 if get_type(d[i]) == "hidden":
@@ -214,15 +214,18 @@ def parse(s, url):
 
             elif d[i] != "":
                 print("New Simple data: " + str(d[i]))
-                current_object = GraphicalObject(current_object.type, href=current_object.href, image=current_object.image, text=d[i].string, font_size=current_object.font_size, fg=current_object.fg, borderwidth = current_object.borderwidth)
-            print("showing object:", current_object)
-            show_object(current_object)
+                current_object = GraphicalObject(current_object.type, image=current_object.image, text=d[i].string, font_size=current_object.font_size, fg=current_object.fg, borderwidth = current_object.borderwidth)
+            if current_object.text == '':
+                continue
+            else:
+                print("showing object:", current_object)
+                show_object(current_object)
             
          
          
             
-parse(s, URL.get())
-print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+parse(s)
+print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 root.mainloop()
 print("closing...")
 print("deleting files...")

@@ -10,18 +10,11 @@
         <a href="truc"><H2>hello2</H2></a>
         <a href="truc"><H3>hello3</H3></a>
         <a href="truc"><H4>hello4</H4></a>
-        <a href="https://google.fr"><H5>hello5</H5></a>
+        <a href="truc"><H5>hello5</H5></a>
         <H6>hello6</H6>
         hello7
         <a href="truc">hello8</a>
 		
-	<video src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"/>
-	<audio src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"/>
+		<video src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"/>
     </body>
 </html>
-
-<script>
-
-
-
-</script>

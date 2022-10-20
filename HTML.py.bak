@@ -1,0 +1,58 @@
+import requests
+from bs4 import BeautifulSoup
+import tkinter as tk
+from dataclasses import dataclass
+
+def get_value(string):
+   return string['value']
+
+def get_width(string):
+   return int(string['width'].replace('%', '').replace(',', ''))
+
+def get_height(string):
+   return int(string['height'].replace('%', '').replace(',', ''))
+
+def get_href(string):
+   return string['href']
+
+def get_src(string):
+   if string['src'][0] == '/':
+       return "http:" + string['src']
+   else:
+        return string['src']
+
+def get_type(string):
+   return string['type']
+
+def get_site(site, formated = 1):
+    if site[0:8] == 'https://' and formated == 1:
+        a = requests.get(site,verify=False, allow_redirects=True)
+        s=BeautifulSoup(a.text, "lxml")
+        return s
+    elif site[0:8] == 'https://' and formated == 0:
+        a = requests.get(site,verify=False, allow_redirects=True).content
+        return a
+    else:
+        with open(site, "rb") as File:
+            a = File.read()
+            s=BeautifulSoup(a, "lxml")
+            return s
+
+def ok(site):
+    if site[0:8] == 'https://':
+        a = requests.get(site,verify=False, allow_redirects=True).ok
+        return a
+    else:
+        return 1
+
+@dataclass
+class GraphicalObject:
+    type: str = "Label"
+    image: str = ""
+    text: str = ""
+    fg: str = "black"
+    font_type: str = "Times New Roman"
+    font_size: int = 16
+    textvariable: tk.StringVar = None
+    borderwidth: int = 2
+    

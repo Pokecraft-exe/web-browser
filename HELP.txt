@@ -1,0 +1,35 @@
+- No files are stored in your computer
+
+- Tag supported:
+    <title>
+    <img src=""/>
+    <video src=""/>
+    <input/>
+    <backcolor color=""/>
+    <color color="">
+    <a>
+    <h1>
+    <h2>
+    <h3>
+    <h4>
+    <h5>
+    <h6>
+
+- structure must be like:
+    <html>
+	    <head>
+		    <title>title</title>
+	    </head>
+	    <body>
+		tags
+	    </body>
+    </html>
+
+- To do:
+
+    - Fix <img/>
+    - make PHk
+    - add link reference and link jump with <a>
+    - make JS like
+    - import file module
+    - make request to light web
